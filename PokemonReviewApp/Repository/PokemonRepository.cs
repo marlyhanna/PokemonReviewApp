@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PokemonReviewApp.Data;
 using PokemonReviewApp.Dto;
+using PokemonReviewApp.Interface;
 using PokemonReviewApp.Interfaces;
 using PokemonReviewApp.Models;
 
@@ -12,7 +13,12 @@ namespace PokemonReviewApp.Repository
         {
         }
 
-        public Pokemon? GetPokemonByName(string name)
+        public Pokemon? GetPokemon(int id)
+        {
+            return _dbSet.FirstOrDefault(p => p.Id == id);
+        }
+
+        public Pokemon? GetPokemon(string name)
         {
             return _dbSet.FirstOrDefault(p => p.Name == name);
         }
