@@ -1,65 +1,38 @@
-﻿using AutoMapper;
+﻿// Services/PokemonService.cs
+using AutoMapper;
 using PokemonReviewApp.Dto;
-using PokemonReviewApp.Interfaces;
+using PokemonReviewApp.Exceptions;
+using PokemonReviewApp.Interface;
 using PokemonReviewApp.Models;
-using PokemonReviewApp.Services.Interfaces;
 
 namespace PokemonReviewApp.Services
 {
-    public class PokemonService : IPokemonService
+    public class PokemonService
     {
-        private readonly IPokemonRepository _pokemonRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public PokemonService(IPokemonRepository pokemonRepository, IMapper mapper)
+        public PokemonService(IUnitOfWork unitOfWork, IMapper mapper)
         {
-            _pokemonRepository = pokemonRepository;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
-        public ICollection<PokemonDto> GetPokemons()
+        public async Task<IEnumerable<PokemonDto>> GetAllPokemonsAsync()
         {
-            var pokemons = _pokemonRepository.GetPokemons();
-            return _mapper.Map<List<PokemonDto>>(pokemons);
+            var pokemons = await _unitOfWork.Pokemons.GetAllAsync();
+            return _mapper.Map<IEnumerable<PokemonDto>>(pokemons);
         }
 
-        public PokemonDto? GetPokemon(int id)
+        public async Task CreatePokemonAsync(PokemonDto pokemonDto)
         {
-            if (!_pokemonRepository.PokemonExists(id)) return null;
-            return _mapper.Map<PokemonDto>(_pokemonRepository.GetPokemon(id));
-        }
+            var pokemon = _mapper.Map<Pokemon>(pokemonDto);
 
-        public PokemonDto? GetPokemon(string name)
-        {
-            var pokemon = _pokemonRepository.GetPokemon(name);
-            return _mapper.Map<PokemonDto>(pokemon);
-        }
+            // Add entity through unit of work
+            await _unitOfWork.Pokemons.AddAsync(pokemon);
 
-        public decimal GetPokemonRating(int pokeId)
-        {
-            if (!_pokemonRepository.PokemonExists(pokeId)) return 0;
-            return _pokemonRepository.GetPokemonRating(pokeId);
-        }
-
-        public bool PokemonExists(int pokeId) => _pokemonRepository.PokemonExists(pokeId);
-
-        public bool CreatePokemon(int ownerId, int categoryId, PokemonDto pokemonCreate)
-        {
-            var pokemonMap = _mapper.Map<Pokemon>(pokemonCreate);
-            return _pokemonRepository.CreatePokemon(ownerId, categoryId, pokemonMap);
-        }
-
-        public bool UpdatePokemon(int ownerId, int categoryId, PokemonDto pokemonUpdate)
-        {
-            var pokemonMap = _mapper.Map<Pokemon>(pokemonUpdate);
-            return _pokemonRepository.UpdatePokemon(ownerId, categoryId, pokemonMap);
-        }
-
-        public bool DeletePokemon(int pokeId)
-        {
-            if (!_pokemonRepository.PokemonExists(pokeId)) return false;
-            var pokemonToDelete = _pokemonRepository.GetPokemon(pokeId);
-            return _pokemonRepository.DeletePokemon(pokemonToDelete);
+            // Save transaction cleanly
+            await _unitOfWork.CompleteAsync();
         }
     }
 }

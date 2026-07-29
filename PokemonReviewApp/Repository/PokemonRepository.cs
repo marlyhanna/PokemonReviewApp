@@ -1,66 +1,26 @@
-﻿using PokemonReviewApp.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using PokemonReviewApp.Data;
 using PokemonReviewApp.Dto;
 using PokemonReviewApp.Interfaces;
 using PokemonReviewApp.Models;
 
 namespace PokemonReviewApp.Repository
 {
-    public class PokemonRepository : IPokemonRepository
+    public class PokemonRepository : GenericRepository<Pokemon>, IPokemonRepository
     {
-        private readonly DataContext _context;
-
-        public PokemonRepository(DataContext context)
+        public PokemonRepository(DataContext context) : base(context)
         {
-            _context = context;
         }
 
-        public bool CreatePokemon(int ownerId, int categoryId, Pokemon pokemon)
+        public Pokemon? GetPokemonByName(string name)
         {
-            // Fetch entities or fallback to empty/throw if required by your domain logic
-            var pokemonOwnerEntity = _context.Owners.FirstOrDefault(a => a.Id == ownerId);
-            var category = _context.Categories.FirstOrDefault(a => a.Id == categoryId);
-
-            // Null checks guard against assigning null to non-nullable properties
-            if (pokemonOwnerEntity == null || category == null)
-                return false;
-
-            var pokemonOwner = new PokemonOwner()
-            {
-                Owner = pokemonOwnerEntity,
-                Pokemon = pokemon,
-            };
-
-            _context.Add(pokemonOwner);
-
-            var pokemonCategory = new PokemonCategory()
-            {
-                Category = category,
-                Pokemon = pokemon,
-            };
-
-            _context.Add(pokemonCategory);
-
-            _context.Add(pokemon);
-
-            return Save();
+            return _dbSet.FirstOrDefault(p => p.Name == name);
         }
 
-        public bool DeletePokemon(Pokemon pokemon)
+        public Pokemon? GetPokemonTrimToUpper(PokemonDto pokemonCreate)
         {
-            _context.Remove(pokemon);
-            return Save();
-        }
-
-        // Updated return type to Pokemon? to handle null results gracefully
-        public Pokemon? GetPokemon(int id)
-        {
-            return _context.Pokemon.FirstOrDefault(p => p.Id == id);
-        }
-
-        // Updated return type to Pokemon?
-        public Pokemon? GetPokemon(string name)
-        {
-            return _context.Pokemon.FirstOrDefault(p => p.Name == name);
+            var trimmedName = pokemonCreate.Name.Trim().ToUpper();
+            return _dbSet.FirstOrDefault(c => c.Name.Trim().ToUpper() == trimmedName);
         }
 
         public decimal GetPokemonRating(int pokeId)
@@ -73,34 +33,42 @@ namespace PokemonReviewApp.Repository
             return ((decimal)review.Sum(r => r.Rating) / review.Count());
         }
 
-        public ICollection<Pokemon> GetPokemons()
-        {
-            return _context.Pokemon.OrderBy(p => p.Id).ToList();
-        }
-
-        // Query database directly instead of pulling full table with GetPokemons() into memory
-        public Pokemon? GetPokemonTrimToUpper(PokemonDto pokemonCreate)
-        {
-            var trimmedName = pokemonCreate.Name.Trim().ToUpper();
-            return _context.Pokemon
-                .FirstOrDefault(c => c.Name.Trim().ToUpper() == trimmedName);
-        }
-
         public bool PokemonExists(int pokeId)
         {
-            return _context.Pokemon.Any(p => p.Id == pokeId);
+            return _dbSet.Any(p => p.Id == pokeId);
         }
 
-        public bool Save()
+        public bool CreatePokemon(int ownerId, int categoryId, Pokemon pokemon)
         {
-            var saved = _context.SaveChanges();
-            return saved > 0;
+            var pokemonOwnerEntity = _context.Owners.FirstOrDefault(a => a.Id == ownerId);
+            var category = _context.Categories.FirstOrDefault(a => a.Id == categoryId);
+
+            if (pokemonOwnerEntity == null || category == null)
+                return false;
+
+            var pokemonOwner = new PokemonOwner()
+            {
+                Owner = pokemonOwnerEntity,
+                Pokemon = pokemon,
+            };
+            _context.Add(pokemonOwner);
+
+            var pokemonCategory = new PokemonCategory()
+            {
+                Category = category,
+                Pokemon = pokemon,
+            };
+            _context.Add(pokemonCategory);
+
+            _dbSet.Add(pokemon);
+
+            return true;
         }
 
         public bool UpdatePokemon(int ownerId, int categoryId, Pokemon pokemon)
         {
-            _context.Update(pokemon);
-            return Save();
+            _dbSet.Update(pokemon);
+            return true;
         }
     }
 }
