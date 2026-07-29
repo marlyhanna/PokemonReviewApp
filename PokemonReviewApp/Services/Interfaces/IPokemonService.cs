@@ -1,6 +1,6 @@
 ﻿using PokemonReviewApp.Dto;
 
-namespace PokemonReviewApp.Services.Interfaces // Or your interface namespace
+namespace PokemonReviewApp.Services.Interfaces 
 {
     public interface IPokemonService
     {
@@ -17,7 +17,7 @@ namespace PokemonReviewApp.Services.Interfaces // Or your interface namespace
       
         bool UpdatePokemon(int ownerId, int categoryId, PokemonDto pokemonUpdate);
 
-        // 3. ADD THIS MISSING METHOD:
+       
         bool DeletePokemon(int pokeId);
     }
 }

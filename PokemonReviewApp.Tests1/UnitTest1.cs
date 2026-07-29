@@ -27,7 +27,6 @@ namespace PokemonReviewApp.Tests1
         [Fact]
         public void GetPokemon_ShouldReturnPokemonDto_WhenPokemonExists()
         {
-            // Arrange
             int pokeId = 1;
             var pokemon = new Pokemon { Id = 1, Name = "Pikachu" };
             var pokemonDto = new PokemonDto { Id = 1, Name = "Pikachu" };
@@ -36,10 +35,10 @@ namespace PokemonReviewApp.Tests1
             _pokemonRepositoryMock.Setup(repo => repo.GetPokemon(pokeId)).Returns(pokemon);
             _mapperMock.Setup(m => m.Map<PokemonDto>(pokemon)).Returns(pokemonDto);
 
-            // Act
+         
             var result = _pokemonService.GetPokemon(pokeId);
 
-            // Assert
+           
             result.Should().NotBeNull();
             result.Id.Should().Be(pokeId);
             result.Name.Should().Be("Pikachu");
