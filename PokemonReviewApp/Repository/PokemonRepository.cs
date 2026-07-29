@@ -16,8 +16,13 @@ namespace PokemonReviewApp.Repository
 
         public bool CreatePokemon(int ownerId, int categoryId, Pokemon pokemon)
         {
-            var pokemonOwnerEntity = _context.Owners.Where(a => a.Id == ownerId).FirstOrDefault();
-            var category = _context.Categories.Where(a => a.Id == categoryId).FirstOrDefault();
+            // Fetch entities or fallback to empty/throw if required by your domain logic
+            var pokemonOwnerEntity = _context.Owners.FirstOrDefault(a => a.Id == ownerId);
+            var category = _context.Categories.FirstOrDefault(a => a.Id == categoryId);
+
+            // Null checks guard against assigning null to non-nullable properties
+            if (pokemonOwnerEntity == null || category == null)
+                return false;
 
             var pokemonOwner = new PokemonOwner()
             {
@@ -46,21 +51,23 @@ namespace PokemonReviewApp.Repository
             return Save();
         }
 
-        public Pokemon GetPokemon(int id)
+        // Updated return type to Pokemon? to handle null results gracefully
+        public Pokemon? GetPokemon(int id)
         {
-            return _context.Pokemon.Where(p => p.Id == id).FirstOrDefault();
+            return _context.Pokemon.FirstOrDefault(p => p.Id == id);
         }
 
-        public Pokemon GetPokemon(string name)
+        // Updated return type to Pokemon?
+        public Pokemon? GetPokemon(string name)
         {
-            return _context.Pokemon.Where(p => p.Name == name).FirstOrDefault();
+            return _context.Pokemon.FirstOrDefault(p => p.Name == name);
         }
 
         public decimal GetPokemonRating(int pokeId)
         {
             var review = _context.Reviews.Where(p => p.Pokemon.Id == pokeId);
 
-            if (review.Count() <= 0)
+            if (!review.Any())
                 return 0;
 
             return ((decimal)review.Sum(r => r.Rating) / review.Count());
@@ -71,10 +78,12 @@ namespace PokemonReviewApp.Repository
             return _context.Pokemon.OrderBy(p => p.Id).ToList();
         }
 
-        public Pokemon GetPokemonTrimToUpper(PokemonDto pokemonCreate)
+        // Query database directly instead of pulling full table with GetPokemons() into memory
+        public Pokemon? GetPokemonTrimToUpper(PokemonDto pokemonCreate)
         {
-            return GetPokemons().Where(c => c.Name.Trim().ToUpper() == pokemonCreate.Name.TrimEnd().ToUpper())
-                .FirstOrDefault();
+            var trimmedName = pokemonCreate.Name.Trim().ToUpper();
+            return _context.Pokemon
+                .FirstOrDefault(c => c.Name.Trim().ToUpper() == trimmedName);
         }
 
         public bool PokemonExists(int pokeId)
@@ -85,7 +94,7 @@ namespace PokemonReviewApp.Repository
         public bool Save()
         {
             var saved = _context.SaveChanges();
-            return saved > 0 ? true : false;
+            return saved > 0;
         }
 
         public bool UpdatePokemon(int ownerId, int categoryId, Pokemon pokemon)
