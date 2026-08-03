@@ -1,39 +1,41 @@
-﻿using PokemonReviewApp.Data;
+﻿using System.Collections;
+using PokemonReviewApp.Data;
 using PokemonReviewApp.Interface;
-using PokemonReviewApp.Interfaces;
-using PokemonReviewApp.Models;
 
 namespace PokemonReviewApp.Repository
 {
     public class UnitOfWork : IUnitOfWork
     {
         private readonly DataContext _context;
-
-        public IPokemonRepository Pokemons { get; private set; }
-        public IGenericRepository<Category> Categories { get; private set; }
-        public IGenericRepository<Country> Countries { get; private set; }
-        public IGenericRepository<Owner> Owners { get; private set; }
-        public IGenericRepository<Review> Reviews { get; private set; }
+        private Hashtable? _repositories;
 
         public UnitOfWork(DataContext context)
         {
             _context = context;
+        }
 
-            Pokemons = new PokemonRepository(_context);
-            Categories = new GenericRepository<Category>(_context);
-            Countries = new GenericRepository<Country>(_context);
-            Owners = new GenericRepository<Owner>(_context);
-            Reviews = new GenericRepository<Review>(_context);
+        public IGenericRepository<TEntity> Repository<TEntity>() where TEntity : class
+        {
+            _repositories ??= new Hashtable();
+
+            var type = typeof(TEntity).Name;
+
+            if (!_repositories.ContainsKey(type))
+            {
+                var repositoryType = typeof(GenericRepository<>);
+                var repositoryInstance = Activator.CreateInstance(
+                    repositoryType.MakeGenericType(typeof(TEntity)), _context);
+
+                _repositories.Add(type, repositoryInstance);
+            }
+
+            return (IGenericRepository<TEntity>)_repositories[type]!;
         }
 
         public async Task<int> CompleteAsync()
-        {
-            return await _context.SaveChangesAsync();
-        }
+            => await _context.SaveChangesAsync();
 
         public void Dispose()
-        {
-            _context.Dispose();
-        }
+            => _context.Dispose();
     }
 }

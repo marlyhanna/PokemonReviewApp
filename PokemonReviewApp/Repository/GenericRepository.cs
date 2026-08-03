@@ -1,50 +1,33 @@
-﻿// Repository/GenericRepository.cs
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using PokemonReviewApp.Data;
 using PokemonReviewApp.Interface;
-using System.Linq.Expressions;
 
 namespace PokemonReviewApp.Repository
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         protected readonly DataContext _context;
-        protected readonly DbSet<T> _dbSet;
+        protected readonly DbSet<T> _dbSet; // Add this line
 
         public GenericRepository(DataContext context)
         {
             _context = context;
-            _dbSet = _context.Set<T>();
+            _dbSet = _context.Set<T>(); // Initialize here
         }
 
         public async Task<IEnumerable<T>> GetAllAsync()
-        {
-            return await _dbSet.ToListAsync();
-        }
+            => await _dbSet.ToListAsync();
 
         public async Task<T?> GetByIdAsync(int id)
-        {
-            return await _dbSet.FindAsync(id);
-        }
-
-        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
-        {
-            return await _dbSet.Where(predicate).ToListAsync();
-        }
+            => await _dbSet.FindAsync(id);
 
         public async Task AddAsync(T entity)
-        {
-            await _dbSet.AddAsync(entity);
-        }
+            => await _dbSet.AddAsync(entity);
 
         public void Update(T entity)
-        {
-            _dbSet.Update(entity);
-        }
+            => _dbSet.Update(entity);
 
         public void Delete(T entity)
-        {
-            _dbSet.Remove(entity);
-        }
+            => _dbSet.Remove(entity);
     }
 }

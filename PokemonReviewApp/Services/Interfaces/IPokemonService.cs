@@ -1,17 +1,17 @@
 ﻿using PokemonReviewApp.Dto;
-using PokemonReviewApp.Models;
+using PokemonReviewApp.Helper;
 
 namespace PokemonReviewApp.Services.Interfaces
 {
     public interface IPokemonService
     {
-        ICollection<PokemonDto> GetPokemons();
-        PokemonDto? GetPokemon(int id);
-        PokemonDto? GetPokemon(string name);
-        decimal GetPokemonRating(int pokeId);
-        bool PokemonExists(int pokeId);
-        bool CreatePokemon(int ownerId, int categoryId, PokemonDto pokemonCreate);
-        bool UpdatePokemon(int ownerId, int categoryId, PokemonDto pokemonUpdate);
-        bool DeletePokemon(int pokeId);
+        Task<Result<ICollection<PokemonDto>>> GetPokemonsAsync();
+        Task<Result<PokemonDto>> GetPokemonByIdAsync(int id);
+        Task<Result<PokemonDto>> GetPokemonByNameAsync(string name);
+        Task<Result<decimal>> GetPokemonRatingAsync(int pokeId);
+        Task<bool> PokemonExistsAsync(int pokeId);
+        Task<Result> CreatePokemonAsync(int ownerId, int categoryId, PokemonDto pokemonCreate);
+        Task<Result> UpdatePokemonAsync(int ownerId, int categoryId, PokemonDto pokemonUpdate);
+        Task<Result> DeletePokemonAsync(int pokeId);
     }
 }

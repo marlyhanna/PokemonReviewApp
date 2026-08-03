@@ -19,125 +19,109 @@ namespace PokemonReviewApp.Controllers
         // GET: api/Pokemon (Public)
         [HttpGet]
         [ProducesResponseType(200, Type = typeof(IEnumerable<PokemonDto>))]
-        public IActionResult GetPokemons()
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> GetPokemons()
         {
-            var pokemons = _pokemonService.GetPokemons();
+            var result = await _pokemonService.GetPokemonsAsync();
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (result.IsFailure)
+                return BadRequest(result.Error);
 
-            return Ok(pokemons);
+            return Ok(result.Value);
         }
 
-        
-        [HttpGet("{pokeId}")]
+        // GET: api/Pokemon/5 (Public)
+        [HttpGet("{pokeId:int}")]
         [ProducesResponseType(200, Type = typeof(PokemonDto))]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult GetPokemon(int pokeId)
+        public async Task<IActionResult> GetPokemon(int pokeId)
         {
-            if (!_pokemonService.PokemonExists(pokeId))
-                return NotFound();
+            var result = await _pokemonService.GetPokemonByIdAsync(pokeId);
 
-            var pokemon = _pokemonService.GetPokemon(pokeId);
+            if (result.IsFailure)
+                return NotFound(result.Error);
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            return Ok(pokemon);
+            return Ok(result.Value);
         }
 
         // GET: api/Pokemon/5/rating (Public)
-        [HttpGet("{pokeId}/rating")]
+        [HttpGet("{pokeId:int}/rating")]
         [ProducesResponseType(200, Type = typeof(decimal))]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult GetPokemonRating(int pokeId)
+        public async Task<IActionResult> GetPokemonRating(int pokeId)
         {
-            if (!_pokemonService.PokemonExists(pokeId))
-                return NotFound();
+            var result = await _pokemonService.GetPokemonRatingAsync(pokeId);
 
-            var rating = _pokemonService.GetPokemonRating(pokeId);
+            if (result.IsFailure)
+                return NotFound(result.Error);
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            return Ok(rating);
+            return Ok(result.Value);
         }
 
-        
+        // POST: api/Pokemon (Authenticated Users)
         [HttpPost]
         [Authorize]
-        [ProducesResponseType(204)]
+        [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
-        public IActionResult CreatePokemon([FromQuery] int ownerId, [FromQuery] int categoryId, [FromBody] PokemonDto pokemonCreate)
+        public async Task<IActionResult> CreatePokemon([FromQuery] int ownerId, [FromQuery] int categoryId, [FromBody] PokemonDto pokemonCreate)
         {
             if (pokemonCreate == null)
-                return BadRequest(ModelState);
+                return BadRequest("Pokemon payload cannot be null.");
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (!_pokemonService.CreatePokemon(ownerId, categoryId, pokemonCreate))
-            {
-                ModelState.AddModelError("", "Something went wrong while saving the Pokemon.");
-                return StatusCode(500, ModelState);
-            }
+            var result = await _pokemonService.CreatePokemonAsync(ownerId, categoryId, pokemonCreate);
+
+            if (result.IsFailure)
+                return BadRequest(result.Error);
 
             return Ok("Successfully created.");
         }
 
-        [HttpPut("{pokeId}")]
+        // PUT: api/Pokemon/5 (Authenticated Users)
+        [HttpPut("{pokeId:int}")]
         [Authorize]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
         [ProducesResponseType(404)]
-        public IActionResult UpdatePokemon(int pokeId, [FromQuery] int ownerId, [FromQuery] int categoryId, [FromBody] PokemonDto updatedPokemon)
+        public async Task<IActionResult> UpdatePokemon(int pokeId, [FromQuery] int ownerId, [FromQuery] int categoryId, [FromBody] PokemonDto updatedPokemon)
         {
             if (updatedPokemon == null)
-                return BadRequest(ModelState);
+                return BadRequest("Pokemon payload cannot be null.");
 
             if (pokeId != updatedPokemon.Id)
-                return BadRequest(ModelState);
-
-            if (!_pokemonService.PokemonExists(pokeId))
-                return NotFound();
+                return BadRequest("ID mismatch between route and request body.");
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (!_pokemonService.UpdatePokemon(ownerId, categoryId, updatedPokemon))
-            {
-                ModelState.AddModelError("", "Something went wrong while updating the Pokemon.");
-                return StatusCode(500, ModelState);
-            }
+            var result = await _pokemonService.UpdatePokemonAsync(ownerId, categoryId, updatedPokemon);
+
+            if (result.IsFailure)
+                return BadRequest(result.Error);
 
             return NoContent();
         }
 
-        
-        [HttpDelete("{pokeId}")]
+        // DELETE: api/Pokemon/5 (Admin Users Only)
+        [HttpDelete("{pokeId:int}")]
         [Authorize(Policy = IdentityData.AdminUserPolicyName)]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-        public IActionResult DeletePokemon(int pokeId)
+        public async Task<IActionResult> DeletePokemon(int pokeId)
         {
-            if (!_pokemonService.PokemonExists(pokeId))
-                return NotFound();
+            var result = await _pokemonService.DeletePokemonAsync(pokeId);
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            if (!_pokemonService.DeletePokemon(pokeId))
-            {
-                ModelState.AddModelError("", "Something went wrong while deleting the Pokemon.");
-                return StatusCode(500, ModelState);
-            }
+            if (result.IsFailure)
+                return NotFound(result.Error);
 
             return Ok("Successfully deleted.");
         }

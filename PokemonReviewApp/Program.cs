@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PokemonReviewApp;
 using PokemonReviewApp.Data;
+using PokemonReviewApp.Exceptions;
 using PokemonReviewApp.Interface;
 using PokemonReviewApp.Interfaces;
 using PokemonReviewApp.Repository;
@@ -37,13 +38,14 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IReviewerRepository, ReviewerRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-
+// Application Services
 builder.Services.AddScoped<IPokemonService, PokemonService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IOwnerService, OwnerService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IReviewerService, ReviewerService>();
+
 
 builder.Services.AddAuthentication(options =>
 {
@@ -64,6 +66,7 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "YourFallbackSecretKey123456789012345!"))
     };
 });
+
 
 builder.Services.AddAuthorization(options =>
 {
@@ -106,22 +109,23 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 
-if (args.Length == 1 && args[0].ToLower() == "seeddata")
+if (args.Length == 1 && args[0].Equals("seeddata", StringComparison.OrdinalIgnoreCase))
     SeedData(app);
 
-void SeedData(IHost app)
+void SeedData(IHost appHost)
 {
-    var scopedFactory = app.Services.GetService<IServiceScopeFactory>();
+    var scopedFactory = appHost.Services.GetService<IServiceScopeFactory>();
 
     if (scopedFactory != null)
     {
-        using (var scope = scopedFactory.CreateScope())
-        {
-            var service = scope.ServiceProvider.GetService<Seed>();
-            service?.SeedDataContext();
-        }
+        using var scope = scopedFactory.CreateScope();
+        var service = scope.ServiceProvider.GetService<Seed>();
+        service?.SeedDataContext();
     }
 }
+
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
